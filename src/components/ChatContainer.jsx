@@ -5,7 +5,6 @@ import { formatMessageTime } from "../lib/utils";
 const ChatContainer = ({ selectedUser, setSelectedUser }) => {
   const scrollEnd = useRef();
 
-  // Scroll to bottom when messages update
   useEffect(() => {
     if (scrollEnd.current) {
       scrollEnd.current.scrollIntoView({ behavior: "smooth" });
@@ -93,6 +92,36 @@ const ChatContainer = ({ selectedUser, setSelectedUser }) => {
         })}
         <div ref={scrollEnd}></div>
       </div>
+
+         {/*bottom area*/}
+         <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 p-3 bg-white/10">
+  {/* Text Input and File Upload */}
+  <div className="flex items-center flex-1 bg-white/5 rounded-full px-3 py-2">
+    <input
+      type="text"
+      placeholder="Send a message"
+      className="bg-transparent outline-none text-white flex-1"
+    />
+    {/* Hidden File Input */}
+    <input
+      type="file"
+      id="image"
+      accept="image/png, image/jpeg"
+      hidden
+    />
+    <label htmlFor="image" className="cursor-pointer">
+      <img src={assets.gallery_icon} alt="Gallery" className="w-5 mr-2" />
+    </label>
+  </div>
+
+  {/* Send Button */}
+  <img
+    src={assets.send_button}
+    alt="Send"
+    className="w-7 cursor-pointer"
+  />
+</div>
+
     </div>
   ) : (
     // Default view when no user is selected
