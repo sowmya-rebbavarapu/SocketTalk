@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from "react";
 import assets, { messagesDummyData, userDummyData } from "../assets/assets";
 import { formatMessageTime } from "../lib/utils";
@@ -5,19 +6,35 @@ import { formatMessageTime } from "../lib/utils";
 const ChatContainer = ({ selectedUser, setSelectedUser }) => {
   const scrollEnd = useRef();
 
-  useEffect(() => {
-    if (scrollEnd.current) {
-      scrollEnd.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, []);
-
-  // Convert user array to map for quick lookup
   const usersById = Object.fromEntries(
-    userDummyData.map(user => [user._id, user])
+    userDummyData.map((user) => [user._id, user])
   );
 
-  // Set current user ID (mock login user ID)
   const currentUserId = "680f50e4f10f3cd28382ecf9"; // Martin Johnson
+
+  // Scroll to bottom when selectedUser or messages change
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      scrollEnd.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+    return () => clearTimeout(timeout);
+  }, [selectedUser, messagesDummyData]);
+
+  // Re-scroll when images load
+  useEffect(() => {
+    const handleImageLoad = () => {
+      scrollEnd.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    const images = document.querySelectorAll("img");
+    images.forEach((img) => img.addEventListener("load", handleImageLoad));
+
+    return () => {
+      images.forEach((img) =>
+        img.removeEventListener("load", handleImageLoad)
+      );
+    };
+  }, [selectedUser, messagesDummyData]);
 
   return selectedUser ? (
     <div className="h-full overflow-scroll relative backdrop-blur-lg">
@@ -93,38 +110,29 @@ const ChatContainer = ({ selectedUser, setSelectedUser }) => {
         <div ref={scrollEnd}></div>
       </div>
 
-         {/*bottom area*/}
-         <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 p-3 bg-white/10">
-  {/* Text Input and File Upload */}
-  <div className="flex items-center flex-1 bg-white/5 rounded-full px-3 py-2">
-    <input
-      type="text"
-      placeholder="Send a message"
-      className="bg-transparent outline-none text-white flex-1"
-    />
-    {/* Hidden File Input */}
-    <input
-      type="file"
-      id="image"
-      accept="image/png, image/jpeg"
-      hidden
-    />
-    <label htmlFor="image" className="cursor-pointer">
-      <img src={assets.gallery_icon} alt="Gallery" className="w-5 mr-2" />
-    </label>
-  </div>
-
-  {/* Send Button */}
-  <img
-    src={assets.send_button}
-    alt="Send"
-    className="w-7 cursor-pointer"
-  />
-</div>
-
+      {/* Bottom Input Area */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 p-3 bg-black/20 backdrop-blur-md">
+        <input
+          type="text"
+          placeholder="Send a message..."
+          className="flex-1 px-4 py-2 rounded bg-white/10 text-white placeholder-gray-300 outline-none"
+        />
+        <input type="file" id="image" accept="image/png, image/jpeg" hidden />
+        <label htmlFor="image">
+          <img
+            src={assets.gallery_icon}
+            alt="gallery"
+            className="w-5 mr-2 cursor-pointer"
+          />
+        </label>
+        <img
+          src={assets.send_button}
+          alt="send"
+          className="w-7 cursor-pointer"
+        />
+      </div>
     </div>
   ) : (
-    // Default view when no user is selected
     <div className="flex flex-col items-center justify-center gap-2 text-gray-500 bg-white/10 max-md:hidden">
       <img src={assets.logo_icon} alt="logo" className="max-w-16" />
       <p className="text-lg font-medium text-white">Chat anytime anywhere</p>
