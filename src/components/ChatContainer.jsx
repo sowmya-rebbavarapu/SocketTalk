@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import assets, { messagesDummyData, userDummyData } from "../assets/assets";
 import { formatMessageTime } from "../lib/utils";
@@ -12,7 +11,6 @@ const ChatContainer = ({ selectedUser, setSelectedUser }) => {
 
   const currentUserId = "680f50e4f10f3cd28382ecf9"; // Martin Johnson
 
-  // Scroll to bottom when selectedUser or messages change
   useEffect(() => {
     const timeout = setTimeout(() => {
       scrollEnd.current?.scrollIntoView({ behavior: "smooth" });
@@ -20,7 +18,6 @@ const ChatContainer = ({ selectedUser, setSelectedUser }) => {
     return () => clearTimeout(timeout);
   }, [selectedUser, messagesDummyData]);
 
-  // Re-scroll when images load
   useEffect(() => {
     const handleImageLoad = () => {
       scrollEnd.current?.scrollIntoView({ behavior: "smooth" });
@@ -67,43 +64,50 @@ const ChatContainer = ({ selectedUser, setSelectedUser }) => {
         {messagesDummyData.map((msg, index) => {
           const isCurrentUser = msg.senderId === currentUserId;
           const sender = usersById[msg.senderId];
-
+          
           return (
             <div
               key={index}
-              className={`flex items-end gap-2 ${
+              className={`flex items-end gap-2 mb-4 ${
                 isCurrentUser ? "justify-end" : "justify-start"
               }`}
             >
-              {msg.image ? (
+              {!isCurrentUser && (
                 <img
-                  src={msg.image}
-                  alt="chat-img"
-                  className="max-w-[230px] border border-gray-700 rounded-lg overflow-hidden mb-8"
+                  src={selectedUser?.profilePic || assets.default_profile}
+                  alt="avatar"
+                  className="w-7 h-7 rounded-full"
                 />
-              ) : (
-                <p
-                  className={`p-2 max-w-[200px] md:text-sm font-light rounded-lg mb-8 break-all bg-violet-500/30 text-white ${
-                    isCurrentUser ? "rounded-br-none" : "rounded-bl-none"
-                  }`}
-                >
-                  {msg.text}
-                </p>
               )}
-              <div className="text-center text-xs">
-                <img
-                  src={
-                    isCurrentUser
-                      ? assets.avatar_icon
-                      : sender?.profilePic || assets.default_profile
-                  }
-                  alt=""
-                  className="w-7 rounded-full"
-                />
-                <p className="text-gray-500">
+              <div>
+                {msg.image ? (
+                  <img
+                    src={msg.image}
+                    alt="chat-img"
+                    className="max-w-[230px] border border-gray-700 rounded-lg overflow-hidden"
+                  />
+                ) : (
+                  <p
+                    className={`p-2 max-w-[200px] md:text-sm font-light rounded-lg break-all text-white ${
+                      isCurrentUser
+                        ? "bg-violet-600 rounded-br-none"
+                        : "bg-violet-500/30 rounded-bl-none"
+                    }`}
+                  >
+                    {msg.text}
+                  </p>
+                )}
+                <p className="text-gray-500 text-xs text-right mt-1">
                   {formatMessageTime(msg.createdAt)}
                 </p>
               </div>
+              {isCurrentUser && (
+                <img
+                  src={assets.avatar_icon}
+                  alt="avatar"
+                  className="w-7 h-7 rounded-full"
+                />
+              )}
             </div>
           );
         })}
