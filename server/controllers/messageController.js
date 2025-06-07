@@ -1,7 +1,7 @@
 import Message from "../models/Message.js";
 import User from "../models/User.js";
 import cloudinary from "../lib/cloudinary.js";
-
+import {io,userSocketMap}  from "../server.js"
 // Get all users except the logged-in user, and count unseen messages
 export const getUserForSidebar = async (req, res) => {
     try {
@@ -94,6 +94,11 @@ export const sendMessage=async(req,res)=>{
             text,
             image:imageUrl
         })
+        //emit the new message to the receiver socket
+        const receiverSocketId=userSocketMap[receiverId];
+        if(receiverSocketId){
+            io.to(receiverSocketId).emit("newMessage",newMessage)
+        }
         res.json({success:true,newMessage});
     } catch (error) {
         console.error(error.message);
