@@ -8,7 +8,7 @@ export const signup = async (req, res) => {
     const { fullName, email, password, bio } = req.body;
 
     try {
-        console.log("Incoming signup data:", req.body);
+        //console.log("Incoming signup data:", req.body);
         if (!fullName || !email || !password || !bio) {
             return res.status(400).json({ success: false, message: "Missing details" });
         }
