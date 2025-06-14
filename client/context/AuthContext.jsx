@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [socket, setSocket] = useState(null);
 
+  // Function to verify token and auto-login
   const checkAuth = async () => {
     try {
       const { data } = await axios.get("/api/auth/check");
@@ -26,26 +27,26 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // login function
+  // LOGIN
   const login = async (state, credentials) => {
     try {
       const { data } = await axios.post(`/api/auth/${state}`, credentials);
       if (data.success) {
         setAuthUser(data.userData);
-        connectSocket(data.userData);
         axios.defaults.headers.common["token"] = data.token;
         setToken(data.token);
         localStorage.setItem("token", data.token);
         toast.success(data.message);
+        connectSocket(data.userData);
       } else {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error?.response?.data?.message || error.message || "Login failed");
+      toast.error(error?.response?.data?.message || "Login failed");
     }
   };
 
-  // logout function
+  // LOGOUT
   const logout = async () => {
     localStorage.removeItem("token");
     setToken(null);
@@ -60,7 +61,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // update profile function
+  // UPDATE PROFILE
   const updateProfile = async (body) => {
     try {
       const { data } = await axios.put("/api/auth/update-profile", body);
@@ -69,13 +70,17 @@ export const AuthProvider = ({ children }) => {
         toast.success("Profile updated successfully");
       }
     } catch (error) {
-      toast.error(error?.response?.data?.message || error.message || "Update failed");
+      toast.error(error?.response?.data?.message || "Update failed");
     }
   };
 
-  // connect socket function
+  // SOCKET CONNECTION
   const connectSocket = (userData) => {
-    if (!userData || socket?.connected) return;
+    if (!userData) return;
+
+    if (socket) {
+      socket.disconnect(); // Disconnect old socket if exists
+    }
 
     const newSocket = io(backendUrl, {
       query: {
@@ -83,15 +88,19 @@ export const AuthProvider = ({ children }) => {
       },
     });
 
-    newSocket.connect();
+    newSocket.on("connect", () => {
+      console.log("✅ Socket connected:", newSocket.id);
+    });
 
     newSocket.on("getOnlineUsers", (userIds) => {
+      console.log("👥 Online users:", userIds);
       setOnlineUsers(userIds);
     });
 
     setSocket(newSocket);
   };
 
+  // Auto-check authentication on app load
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common["token"] = token;
