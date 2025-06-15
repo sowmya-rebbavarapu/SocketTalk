@@ -1,5 +1,4 @@
 
-
 # Full Stack Chat Application
 
 This is a real-time chat application built with the MERN stack (MongoDB, Express, React, Node.js) and powered by Socket.io for live messaging and Cloudinary for image uploads. It features user authentication, chat history, media sharing, and online status indicators.
@@ -46,8 +45,8 @@ This is a real-time chat application built with the MERN stack (MongoDB, Express
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/sowmya-rebbavarapu/chat-app
-cd chat-app
+git clone https://github.com/sowmya-rebbavarapu/SocketTalk
+cd SocketTalk
 ```
 ---
 
