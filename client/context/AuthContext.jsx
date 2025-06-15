@@ -14,30 +14,30 @@ export const AuthProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [socket, setSocket] = useState(null);
 
-  // Function to verify token and auto-login
+  // ✅ Verify user session on app load
   const checkAuth = async () => {
     try {
       const { data } = await axios.get("/api/auth/check");
       if (data.success) {
         setAuthUser(data.user);
-        connectSocket(data.user);
+        connectSocket(data.user); // 👈 Connect socket after auth
       }
     } catch (error) {
-      toast.error("Please Login");
+      toast.error("Please log in again");
     }
   };
 
-  // LOGIN
-  const login = async (state, credentials) => {
+  // ✅ Login / Signup
+  const login = async (route, credentials) => {
     try {
-      const { data } = await axios.post(`/api/auth/${state}`, credentials);
+      const { data } = await axios.post(`/api/auth/${route}`, credentials);
       if (data.success) {
         setAuthUser(data.userData);
         axios.defaults.headers.common["token"] = data.token;
         setToken(data.token);
         localStorage.setItem("token", data.token);
         toast.success(data.message);
-        connectSocket(data.userData);
+        connectSocket(data.userData); // 👈 Connect socket after login
       } else {
         toast.error(data.message);
       }
@@ -46,14 +46,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // LOGOUT
-  const logout = async () => {
+  // ✅ Logout
+  const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
     setAuthUser(null);
     setOnlineUsers([]);
     axios.defaults.headers.common["token"] = null;
-    toast.success("Logged out successfully");
+    toast.success("Logged out");
 
     if (socket) {
       socket.disconnect();
@@ -61,25 +61,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // UPDATE PROFILE
+  // ✅ Profile Update
   const updateProfile = async (body) => {
     try {
       const { data } = await axios.put("/api/auth/update-profile", body);
       if (data.success) {
         setAuthUser(data.user);
-        toast.success("Profile updated successfully");
+        toast.success("Profile updated");
       }
     } catch (error) {
       toast.error(error?.response?.data?.message || "Update failed");
     }
   };
 
-  // SOCKET CONNECTION
+  // ✅ Socket Connection Logic
   const connectSocket = (userData) => {
     if (!userData) return;
 
     if (socket) {
-      socket.disconnect(); // Disconnect old socket if exists
+      socket.disconnect();
     }
 
     const newSocket = io(backendUrl, {
@@ -90,6 +90,7 @@ export const AuthProvider = ({ children }) => {
 
     newSocket.on("connect", () => {
       console.log("✅ Socket connected:", newSocket.id);
+      newSocket.emit("getOnlineUsers"); // 👈 Ask server for users
     });
 
     newSocket.on("getOnlineUsers", (userIds) => {
@@ -97,10 +98,14 @@ export const AuthProvider = ({ children }) => {
       setOnlineUsers(userIds);
     });
 
+    newSocket.on("disconnect", () => {
+      console.log("❌ Socket disconnected");
+    });
+
     setSocket(newSocket);
   };
 
-  // Auto-check authentication on app load
+  // ✅ Auto-login on page load
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common["token"] = token;
@@ -123,5 +128,7 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  );
 };

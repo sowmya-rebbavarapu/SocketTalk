@@ -1,23 +1,57 @@
-import React, { useEffect, useRef } from "react";
-import assets, { messagesDummyData, userDummyData } from "../assets/assets";
+import React, { useEffect, useRef, useState, useContext } from "react";
+import assets from "../assets/assets";
 import { formatMessageTime } from "../lib/utils";
+import { ChatContext } from "../../context/ChatContext";
+import { AuthContext } from "../../context/AuthContext";
+import toast from "react-hot-toast";
 
-const ChatContainer = ({ selectedUser, setSelectedUser }) => {
+const ChatContainer = () => {
+  const { messages, selectedUser, setSelectedUser, sendMessage, getMessages } = useContext(ChatContext);
+  const { authUser, onlineUsers } = useContext(AuthContext);
+
   const scrollEnd = useRef();
+  const [input, setInput] = useState("");
 
-  const usersById = Object.fromEntries(
-    userDummyData.map((user) => [user._id, user])
-  );
+  // Handle sending a message
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    await sendMessage({ text: input.trim() });
+    setInput("");
+  };
 
-  const currentUserId = "680f50e4f10f3cd28382ecf9"; // Martin Johnson
+  // Handle sending an image
+  const handleSendImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !file.type.startsWith("image/")) {
+      toast.error("Select an image file");
+      return;
+    }
 
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      await sendMessage({ image: reader.result });
+      e.target.value = "";
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Fetch messages when a user is selected
+  useEffect(() => {
+    if (selectedUser) {
+      getMessages(selectedUser._id);
+    }
+  }, [selectedUser]);
+
+  // Scroll to bottom when messages update
   useEffect(() => {
     const timeout = setTimeout(() => {
       scrollEnd.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
     return () => clearTimeout(timeout);
-  }, [selectedUser, messagesDummyData]);
+  }, [messages]);
 
+  // Scroll to bottom when images load
   useEffect(() => {
     const handleImageLoad = () => {
       scrollEnd.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,26 +59,36 @@ const ChatContainer = ({ selectedUser, setSelectedUser }) => {
 
     const images = document.querySelectorAll("img");
     images.forEach((img) => img.addEventListener("load", handleImageLoad));
-
     return () => {
-      images.forEach((img) =>
-        img.removeEventListener("load", handleImageLoad)
-      );
+      images.forEach((img) => img.removeEventListener("load", handleImageLoad));
     };
-  }, [selectedUser, messagesDummyData]);
+  }, [selectedUser, messages]);
 
-  return selectedUser ? (
+  const currentUserId = authUser?._id;
+
+  if (!selectedUser) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 text-gray-500 bg-white/10 max-md:hidden">
+        <img src={assets.logo_icon} alt="logo" className="max-w-16" />
+        <p className="text-lg font-medium text-white">Chat anytime anywhere</p>
+      </div>
+    );
+  }
+
+  return (
     <div className="h-full overflow-scroll relative backdrop-blur-lg">
       {/* Header */}
       <div className="flex items-center gap-3 py-3 mx-4 border-b border-stone-500">
         <img
-          src={selectedUser?.profilePic || assets.avatar_icon}
+          src={selectedUser.profilePic || assets.avatar_icon}
           alt="profile"
           className="w-8 rounded-full"
         />
         <p className="flex-1 text-lg text-white flex items-center gap-2">
           {selectedUser?.fullName}
-          <span className="w-2 h-2 rounded-full bg-green-500"></span>
+          {onlineUsers.includes(selectedUser._id) && (
+            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+          )}
         </p>
         <img
           onClick={() => setSelectedUser(null)}
@@ -61,16 +105,13 @@ const ChatContainer = ({ selectedUser, setSelectedUser }) => {
 
       {/* Chat Messages */}
       <div className="flex flex-col h-[calc(100%-120px)] overflow-y-scroll p-3 pb-6">
-        {messagesDummyData.map((msg, index) => {
+        {messages.map((msg, index) => {
           const isCurrentUser = msg.senderId === currentUserId;
-          const sender = usersById[msg.senderId];
-          
+
           return (
             <div
-              key={index}
-              className={`flex items-end gap-2 mb-4 ${
-                isCurrentUser ? "justify-end" : "justify-start"
-              }`}
+              key={msg._id || index}
+              className={`flex items-end gap-2 mb-4 ${isCurrentUser ? "justify-end" : "justify-start"}`}
             >
               {!isCurrentUser && (
                 <img
@@ -98,12 +139,12 @@ const ChatContainer = ({ selectedUser, setSelectedUser }) => {
                   </p>
                 )}
                 <p className="text-gray-500 text-xs text-right mt-1">
-                  {formatMessageTime(msg.createdAt)}
+                  {msg.createdAt ? formatMessageTime(msg.createdAt) : ""}
                 </p>
               </div>
               {isCurrentUser && (
                 <img
-                  src={assets.avatar_icon}
+                  src={authUser?.profilePic || assets.avatar_icon}
                   alt="avatar"
                   className="w-7 h-7 rounded-full"
                 />
@@ -117,29 +158,30 @@ const ChatContainer = ({ selectedUser, setSelectedUser }) => {
       {/* Bottom Input Area */}
       <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 p-3 bg-black/20 backdrop-blur-md">
         <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSendMessage(e)}
           type="text"
           placeholder="Send a message..."
           className="flex-1 px-4 py-2 rounded bg-white/10 text-white placeholder-gray-300 outline-none"
         />
-        <input type="file" id="image" accept="image/png, image/jpeg" hidden />
+        <input
+          onChange={handleSendImage}
+          type="file"
+          id="image"
+          accept="image/png, image/jpeg"
+          hidden
+        />
         <label htmlFor="image">
-          <img
-            src={assets.gallery_icon}
-            alt="gallery"
-            className="w-5 mr-2 cursor-pointer"
-          />
+          <img src={assets.gallery_icon} alt="gallery" className="w-5 mr-2 cursor-pointer" />
         </label>
         <img
+          onClick={handleSendMessage}
           src={assets.send_button}
           alt="send"
           className="w-7 cursor-pointer"
         />
       </div>
-    </div>
-  ) : (
-    <div className="flex flex-col items-center justify-center gap-2 text-gray-500 bg-white/10 max-md:hidden">
-      <img src={assets.logo_icon} alt="logo" className="max-w-16" />
-      <p className="text-lg font-medium text-white">Chat anytime anywhere</p>
     </div>
   );
 };
