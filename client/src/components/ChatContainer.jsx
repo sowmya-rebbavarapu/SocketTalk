@@ -12,7 +12,6 @@ const ChatContainer = () => {
   const scrollEnd = useRef();
   const [input, setInput] = useState("");
 
-  // Handle sending a message
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -20,30 +19,28 @@ const ChatContainer = () => {
     setInput("");
   };
 
-  // Handle sending an image
   const handleSendImage = async (e) => {
     const file = e.target.files[0];
     if (!file || !file.type.startsWith("image/")) {
-      toast.error("Select an image file");
+      toast.error("Please select a valid image file");
       return;
     }
 
     const reader = new FileReader();
     reader.onloadend = async () => {
-      await sendMessage({ image: reader.result });
-      e.target.value = "";
+      const base64Image = reader.result;
+      await sendMessage({ image: base64Image });
+      e.target.value = ""; // clear file input
     };
     reader.readAsDataURL(file);
   };
 
-  // Fetch messages when a user is selected
   useEffect(() => {
     if (selectedUser) {
       getMessages(selectedUser._id);
     }
   }, [selectedUser]);
 
-  // Scroll to bottom when messages update
   useEffect(() => {
     const timeout = setTimeout(() => {
       scrollEnd.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,7 +48,6 @@ const ChatContainer = () => {
     return () => clearTimeout(timeout);
   }, [messages]);
 
-  // Scroll to bottom when images load
   useEffect(() => {
     const handleImageLoad = () => {
       scrollEnd.current?.scrollIntoView({ behavior: "smooth" });
@@ -62,7 +58,7 @@ const ChatContainer = () => {
     return () => {
       images.forEach((img) => img.removeEventListener("load", handleImageLoad));
     };
-  }, [selectedUser, messages]);
+  }, [messages, selectedUser]);
 
   const currentUserId = authUser?._id;
 
@@ -82,7 +78,7 @@ const ChatContainer = () => {
         <img
           src={selectedUser.profilePic || assets.avatar_icon}
           alt="profile"
-          className="w-8 rounded-full"
+          className="w-8 h-8 rounded-full object-cover"
         />
         <p className="flex-1 text-lg text-white flex items-center gap-2">
           {selectedUser?.fullName}
@@ -103,7 +99,7 @@ const ChatContainer = () => {
         />
       </div>
 
-      {/* Chat Messages */}
+      {/* Messages */}
       <div className="flex flex-col h-[calc(100%-120px)] overflow-y-scroll p-3 pb-6">
         {messages.map((msg, index) => {
           const isCurrentUser = msg.senderId === currentUserId;
@@ -115,9 +111,9 @@ const ChatContainer = () => {
             >
               {!isCurrentUser && (
                 <img
-                  src={selectedUser?.profilePic || assets.default_profile}
+                  src={selectedUser?.profilePic || assets.avatar_icon}
                   alt="avatar"
-                  className="w-7 h-7 rounded-full"
+                  className="w-7 h-7 rounded-full object-cover"
                 />
               )}
               <div>
@@ -146,7 +142,7 @@ const ChatContainer = () => {
                 <img
                   src={authUser?.profilePic || assets.avatar_icon}
                   alt="avatar"
-                  className="w-7 h-7 rounded-full"
+                  className="w-7 h-7 rounded-full object-cover"
                 />
               )}
             </div>
@@ -155,7 +151,7 @@ const ChatContainer = () => {
         <div ref={scrollEnd}></div>
       </div>
 
-      {/* Bottom Input Area */}
+      {/* Input area */}
       <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 p-3 bg-black/20 backdrop-blur-md">
         <input
           value={input}

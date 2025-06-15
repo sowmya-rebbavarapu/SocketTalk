@@ -1,7 +1,17 @@
-import React from "react";
-import assets, { imagesDummyData } from "../assets/assets";
+import React, { useContext, useEffect, useState } from "react";
+import assets from "../assets/assets";
+import { ChatContext } from "../../context/ChatContext";
+import { AuthContext } from "../../context/AuthContext";
 
-const RightSideBar = ({ selectedUser }) => {
+const RightSideBar = () => {
+  const { selectedUser, messages } = useContext(ChatContext);
+  const { logout, onlineUsers } = useContext(AuthContext);
+  const [msgImages, setMsgImages] = useState([]);
+
+  useEffect(() => {
+    setMsgImages(messages.filter((msg) => msg.image).map((msg) => msg.image));
+  }, [messages]);
+
   return (
     selectedUser && (
       <div
@@ -9,35 +19,45 @@ const RightSideBar = ({ selectedUser }) => {
           selectedUser ? "max-md:hidden" : ""
         }`}
       >
+        {/* Profile Section */}
         <div className="pt-16 flex flex-col items-center gap-2 text-xs font-light mx-auto">
           <img
             src={selectedUser?.profilePic || assets.avatar_icon}
-            alt=""
+            alt="profile"
             className="w-20 aspect-[1/1] rounded-full"
           />
           <h1 className="px-10 text-xl font-medium mx-auto flex items-center gap-2">
-            <p className="w-2 h-2 rounded-full bg-green-500"></p>
+            {onlineUsers.includes(selectedUser._id) && (
+              <span className="w-2 h-2 rounded-full bg-green-500"></span>
+            )}
             {selectedUser.fullName}
           </h1>
           <p className="px-10 mx-auto">{selectedUser.bio}</p>
         </div>
+
         <hr className="border-[#ffffff50] my-4" />
+
+        {/* Media Section */}
         <div className="px-5 text-xs">
           <p>Media</p>
           <div className="mt-2 max-h-[200px] overflow-y-scroll grid grid-cols-3 gap-4 opacity-80">
-            {imagesDummyData.map((url, index) => (
+            {msgImages.map((url, index) => (
               <div
                 key={index}
-                onClick={() => window.open(url)}
+                onClick={() => window.open(url, "_blank")}
                 className="cursor-pointer rounded"
               >
-                <img src={url} alt="" className="h-full rounded-md" />
+                <img src={url} alt={`media-${index}`} className="h-full rounded-md" />
               </div>
             ))}
           </div>
         </div>
+
         <hr className="border-[#ffffff50] my-4" />
+
+        {/* Logout Button */}
         <button
+          onClick={logout}
           className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-400 to-violet-600 px-4 py-2 rounded"
         >
           Logout
